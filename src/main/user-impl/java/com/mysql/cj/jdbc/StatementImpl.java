@@ -75,6 +75,8 @@ import com.mysql.cj.jdbc.result.CachedResultSetMetaData;
 import com.mysql.cj.jdbc.result.ResultSetFactory;
 import com.mysql.cj.jdbc.result.ResultSetImpl;
 import com.mysql.cj.jdbc.result.ResultSetInternalMethods;
+import com.mysql.cj.jdbc.smart.LogUtil;
+import com.mysql.cj.jdbc.smart.QueryRewritter;
 import com.mysql.cj.log.ProfilerEvent;
 import com.mysql.cj.protocol.Message;
 import com.mysql.cj.protocol.ProtocolEntityFactory;
@@ -652,6 +654,26 @@ public class StatementImpl implements JdbcStatement {
         JdbcConnection locallyScopedConn = checkClosed();
 
         synchronized (locallyScopedConn.getConnectionMutex()) {
+
+            // ++ SmartJDBC ++ //
+            StringBuilder logText = new StringBuilder();
+            logText.append("==================================================\n");
+            logText.append("  StatementImpl -> executeInternal -> [Original SQL]\n");
+            logText.append("--------------------------------------------------\n");
+            logText.append(sql);
+            LogUtil.log(logText.toString());
+
+            if (sql.toLowerCase().contains("select")) {
+                sql = QueryRewritter.rewriteQuery(sql);
+                logText = new StringBuilder();
+                logText.append("==================================================\n");
+                logText.append("  StatementImpl -> executeInternal -> [Rewritten SQL]\n");
+                logText.append("--------------------------------------------------\n");
+                logText.append(sql);
+                LogUtil.log(logText.toString());
+            }
+            // -- SmartJDBC -- //
+
             checkClosed();
 
             checkNullOrEmptyQuery(sql);
